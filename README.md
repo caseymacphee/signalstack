@@ -7,6 +7,7 @@ What it contains:
 
 
 File Structure:
+```
 signalstack/
 ├── cmd/
 │   ├── backtest/          # CLI: run backtests
@@ -82,3 +83,4 @@ signalstack/
 ├── Makefile
 ├── go.mod
 └── go.sum
+```
