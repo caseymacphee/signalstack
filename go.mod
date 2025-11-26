@@ -1,4 +1,4 @@
-module signalstack/strategy
+module signalstack
 
 go 1.25.4
 
