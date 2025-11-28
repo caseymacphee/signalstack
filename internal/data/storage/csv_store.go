@@ -137,3 +137,10 @@ func (s *CSVStore) LatestTimestamp(symbol core.Symbol, timeframe core.Timeframe)
 	}
 	return &timestamp, nil
 }
+
+
+func NewCSVStore(rootDir string) *CSVStore {
+	return &CSVStore{
+		RootDir: rootDir,
+	}
+}

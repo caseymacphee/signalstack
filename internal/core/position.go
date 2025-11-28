@@ -7,8 +7,8 @@ import (
 
 type Position struct {
 	Symbol Symbol
-	Side Side
-	Quantity int
+	PositionSide PositionSide
+	Quantity float64
 	AvgEntryPrice float64
 	CostBasis float64
 	CurrentPrice float64
@@ -16,6 +16,8 @@ type Position struct {
 	UnrealizedProfitPercent float64
 	EntryTime time.Time
 	LastExitTime time.Time
+	StopLoss *float64
+	TakeProfit *float64
 }
 
 type PositionStatus string
