@@ -12,9 +12,7 @@ import (
 	"github.com/piquette/finance-go/datetime"
 )
 
-
 type YahooDataSource struct {
-
 }
 
 func (y *YahooDataSource) Name() string {
@@ -30,10 +28,10 @@ func (y *YahooDataSource) FetchOHLCV(symbol core.Symbol, timeframe core.Timefram
 		Timeout: 20 * time.Second,
 	})
 	params := &chart.Params{
-		Symbol: string(symbol),
+		Symbol:   string(symbol),
 		Interval: datetime.Interval(timeframe),
-		Start: datetime.New(&start),
-		End: datetime.New(&end),
+		Start:    datetime.New(&start),
+		End:      datetime.New(&end),
 	}
 	iter := chart.Get(params)
 	var candles []core.Candle
@@ -45,11 +43,11 @@ func (y *YahooDataSource) FetchOHLCV(symbol core.Symbol, timeframe core.Timefram
 		close, _ := bar.Close.Float64()
 		candle := core.Candle{
 			Timestamp: *datetime.FromUnix(bar.Timestamp).Time(),
-			Open: open,
-			High: high,
-			Low: low,
-			Close: close,
-			Volume: bar.Volume,
+			Open:      open,
+			High:      high,
+			Low:       low,
+			Close:     close,
+			Volume:    bar.Volume,
 		}
 		candles = append(candles, candle)
 	}

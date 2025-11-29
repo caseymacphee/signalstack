@@ -10,14 +10,12 @@ import (
 	"time"
 )
 
-
 type CSVStore struct {
 	RootDir string
 }
 
-
 func (s *CSVStore) Path(symbol core.Symbol) string {
-	return filepath.Join(s.RootDir, string(symbol) + ".csv")
+	return filepath.Join(s.RootDir, string(symbol)+".csv")
 }
 
 func (s *CSVStore) Store(symbol core.Symbol, timeframe core.Timeframe, candles []core.Candle) error {
@@ -40,17 +38,16 @@ func (s *CSVStore) Store(symbol core.Symbol, timeframe core.Timeframe, candles [
 	for _, candle := range candles {
 		writer.Write([]string{
 			candle.Timestamp.Format(time.RFC3339),
-			strconv.FormatFloat(candle.Open, 'f', 2, 64),   // 2 decimal places
-			strconv.FormatFloat(candle.High, 'f', 2, 64),   // 2 decimal places
-			strconv.FormatFloat(candle.Low, 'f', 2, 64),     // 2 decimal places
-			strconv.FormatFloat(candle.Close, 'f', 2, 64),   // 2 decimal places
+			strconv.FormatFloat(candle.Open, 'f', 2, 64),  // 2 decimal places
+			strconv.FormatFloat(candle.High, 'f', 2, 64),  // 2 decimal places
+			strconv.FormatFloat(candle.Low, 'f', 2, 64),   // 2 decimal places
+			strconv.FormatFloat(candle.Close, 'f', 2, 64), // 2 decimal places
 			strconv.Itoa(candle.Volume),
 		})
 	}
 	writer.Flush()
 	return nil
 }
-
 
 func (s *CSVStore) Fetch(symbol core.Symbol, timeframe core.Timeframe, start *time.Time) ([]core.Candle, error) {
 	path := s.Path(symbol)
@@ -96,11 +93,11 @@ func (s *CSVStore) Fetch(symbol core.Symbol, timeframe core.Timeframe, start *ti
 		}
 		candle := core.Candle{
 			Timestamp: timestamp,
-			Open: open,
-			High: high,
-			Low: low,
-			Close: close,
-			Volume: volume,
+			Open:      open,
+			High:      high,
+			Low:       low,
+			Close:     close,
+			Volume:    volume,
 		}
 		if start != nil && candle.Timestamp.Before(*start) {
 			continue
@@ -109,7 +106,6 @@ func (s *CSVStore) Fetch(symbol core.Symbol, timeframe core.Timeframe, start *ti
 	}
 	return candles, nil
 }
-
 
 func (s *CSVStore) LatestTimestamp(symbol core.Symbol, timeframe core.Timeframe) (*time.Time, error) {
 	path := s.Path(symbol)
@@ -137,7 +133,6 @@ func (s *CSVStore) LatestTimestamp(symbol core.Symbol, timeframe core.Timeframe)
 	}
 	return &timestamp, nil
 }
-
 
 func NewCSVStore(rootDir string) *CSVStore {
 	return &CSVStore{

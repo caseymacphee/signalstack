@@ -3,6 +3,6 @@ package core
 type PositionSide string
 
 const (
-	PositionSideLong PositionSide = "long"
+	PositionSideLong  PositionSide = "long"
 	PositionSideShort PositionSide = "short"
 )

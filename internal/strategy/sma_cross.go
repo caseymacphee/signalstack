@@ -1,12 +1,13 @@
 package strategy
 
+const StratIDSMACross = "SMA_CROSS"
+
 type SMACross struct {
 	shortWindow int
-	longWindow int
-	closes []float64
-	shortSum float64
-	longSum float64
-
+	longWindow  int
+	closes      []float64
+	shortSum    float64
+	longSum     float64
 }
 
 func NewSMACross(shortWindow int, longWindow int) *SMACross {
@@ -15,15 +16,14 @@ func NewSMACross(shortWindow int, longWindow int) *SMACross {
 	}
 	return &SMACross{
 		shortWindow: shortWindow,
-		longWindow: longWindow,
-		closes: make([]float64, 0, longWindow*2),
+		longWindow:  longWindow,
+		closes:      make([]float64, 0, longWindow*2),
 	}
 }
 
 func (s *SMACross) Name() string {
 	return "SMA_CROSS"
 }
-
 
 func (s *SMACross) OnBar(ctx Context) Decision {
 	c := ctx.Candle
@@ -37,18 +37,18 @@ func (s *SMACross) OnBar(ctx Context) Decision {
 	s.shortSum = 0
 	s.longSum = 0
 	if n > s.shortWindow {
-		for i := n - s.shortWindow; i < n; i ++ {
+		for i := n - s.shortWindow; i < n; i++ {
 			s.shortSum += s.closes[i]
 		}
 	}
 	if n > s.longWindow {
-		for i := n - s.longWindow; i < n; i ++ {
+		for i := n - s.longWindow; i < n; i++ {
 			s.longSum += s.closes[i]
 		}
 	}
-    if n < s.longWindow {
-        return Decision{}
-    }
+	if n < s.longWindow {
+		return Decision{}
+	}
 
 	// compute SMAs
 	shortSMA := s.shortSum / float64(s.shortWindow)
@@ -56,17 +56,33 @@ func (s *SMACross) OnBar(ctx Context) Decision {
 
 	if ctx.Position == nil && shortSMA > longSMA {
 		return Decision{
-			EnterLong: true,
-			StopLoss: nil,
+			EnterLong:  true,
+			StopLoss:   nil,
 			TakeProfit: nil,
 		}
 	}
 	if ctx.Position != nil && shortSMA < longSMA {
 		return Decision{
-			ExitLong: true,
-			StopLoss: nil,
+			ExitLong:   true,
+			StopLoss:   nil,
 			TakeProfit: nil,
 		}
 	}
 	return Decision{}
+}
+
+func RegisterBuiltins(reg *Registry) {
+	reg.Register(StratIDSMACross, NewSMACrossFromParams)
+}
+
+func NewSMACrossFromParams(params map[string]string) (Strategy, error) {
+	shortN, err := parseIntParam(params, "short_window", 20)
+	if err != nil {
+		return nil, err
+	}
+	longN, err := parseIntParam(params, "long_window", 50)
+	if err != nil {
+		return nil, err
+	}
+	return NewSMACross(shortN, longN), nil
 }

@@ -11,10 +11,9 @@ import (
 	"time"
 )
 
-
 func main() {
 	var (
-		symbol = flag.String("symbol", "AAPL", "ticker symbol")
+		symbol    = flag.String("symbol", "AAPL", "ticker symbol")
 		timeframe = flag.String("timeframe", "1d", "timeframe")
 		startDate = flag.String("start-date", "", "start date")
 	)
@@ -35,10 +34,10 @@ func main() {
 	fmt.Println("Fetched", len(candles), "candles")
 	strat := strategy.NewSMACross(20, 50)
 	engine := engine.New(engine.EngineConfig{
-		InitialCapital: 100000,
-		SlippageBps: 10,
+		InitialCapital:     100000,
+		SlippageBps:        10,
 		CommissionPerTrade: 10,
-		AllInOnEntry: true,
+		AllInOnEntry:       true,
 	})
 	result := engine.Run(strat, candles)
 	fmt.Println("Result:", result)

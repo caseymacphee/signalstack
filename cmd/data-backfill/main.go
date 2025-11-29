@@ -11,13 +11,12 @@ import (
 	"signalstack/internal/data/storage"
 )
 
-
 func main() {
 	var (
-		symbolStr = flag.String("symbol", "AAPL", "ticker symbol")
+		symbolStr    = flag.String("symbol", "AAPL", "ticker symbol")
 		timeframeStr = flag.String("timeframe", "1d", "timeframe")
 		startDateStr = flag.String("start-date", "", "start date")
-		endDateStr = flag.String("end-date", "", "end date")
+		endDateStr   = flag.String("end-date", "", "end date")
 	)
 
 	flag.Parse()
@@ -29,7 +28,7 @@ func main() {
 		RootDir: "data/raw/yahoo",
 	}
 	backfillSvc := backfill.BackfillService{
-		Src: client,
+		Src:     client,
 		Storage: store,
 	}
 	timeframe := core.Timeframe(*timeframeStr)
@@ -61,10 +60,10 @@ func main() {
 		endDate = &now
 	}
 	backfillReq := backfill.BackfillRequest{
-		Symbol: symbol,
+		Symbol:    symbol,
 		Timeframe: timeframe,
 		StartDate: startDate,
-		EndDate: endDate,
+		EndDate:   endDate,
 	}
 	err = backfillSvc.Backfill(backfillReq)
 	if err != nil {

@@ -6,23 +6,21 @@ import (
 	"signalstack/internal/strategy"
 )
 
-
 type EngineConfig struct {
-	InitialCapital float64
-	SlippageBps float64
+	InitialCapital     float64
+	SlippageBps        float64
 	CommissionPerTrade float64
-	AllInOnEntry bool
+	AllInOnEntry       bool
 }
-
 
 type BacktestResult struct {
-	Trades []core.Trade
+	Trades      []core.Trade
 	EquityCurve []core.EquityPoint
 
-	FinalEquity float64
-	MaxDrawdown float64
+	FinalEquity      float64
+	MaxDrawdown      float64
+	BuyAndHoldReturn float64
 }
-
 
 type Engine struct {
 	cfg EngineConfig
@@ -33,7 +31,6 @@ func New(cfg EngineConfig) *Engine {
 		cfg: cfg,
 	}
 }
-
 
 func (e *Engine) Run(
 	strat strategy.Strategy,
@@ -53,17 +50,17 @@ func (e *Engine) Run(
 			equity += pos.Quantity * c.Close
 		}
 		equityCurve = append(equityCurve, core.EquityPoint{
-			Time: c.Timestamp,
+			Time:   c.Timestamp,
 			Equity: equity,
 		})
 		if pos != nil {
 			exited, trade := e.checkExitOnBar(pos, c)
 			if exited {
-				cash += trade.PnL + pos.Quantity * pos.AvgEntryPrice
+				cash += trade.PnL + pos.Quantity*pos.AvgEntryPrice
 				trades = append(trades, trade)
 				pos = nil
 				equityCurve = append(equityCurve, core.EquityPoint{
-					Time: c.Timestamp,
+					Time:   c.Timestamp,
 					Equity: equity,
 				})
 				equity = cash
@@ -71,10 +68,10 @@ func (e *Engine) Run(
 		}
 
 		ctx := strategy.Context{
-			Index: i,
-			Candle: c,
+			Index:    i,
+			Candle:   c,
 			Position: pos,
-			Equity: cash,
+			Equity:   cash,
 		}
 		decision := strat.OnBar(ctx)
 		if decision.EnterLong {
@@ -89,7 +86,7 @@ func (e *Engine) Run(
 		if decision.ExitLong {
 			if pos != nil {
 				trade := e.exitPosition(pos, c)
-				cash += pos.Quantity * trade.ExitPrice - e.cfg.CommissionPerTrade
+				cash += pos.Quantity*trade.ExitPrice - e.cfg.CommissionPerTrade
 				trades = append(trades, trade)
 				pos = nil
 			}
@@ -99,21 +96,32 @@ func (e *Engine) Run(
 	if len(candles) > 0 && pos != nil {
 		last := candles[len(candles)-1]
 		trade := e.exitPosition(pos, last)
-		cash += trade.PnL + pos.Quantity * pos.AvgEntryPrice
+		cash += trade.PnL + pos.Quantity*pos.AvgEntryPrice
 		trades = append(trades, trade)
 		pos = nil
 		equityCurve = append(equityCurve, core.EquityPoint{
-			Time: last.Timestamp,
+			Time:   last.Timestamp,
 			Equity: cash,
 		})
 	}
 	finalEquity := cash
 	maxDD := computeMaxDrawdown(equityCurve)
+
+	var buyAndHold float64
+	if len(candles) > 0 {
+		first := candles[0].Close
+		last := candles[len(candles)-1].Close
+		if first > 0 {
+			buyAndHold = (last - first) / first
+		}
+	}
+
 	return BacktestResult{
-		Trades: trades,
-		EquityCurve: equityCurve,
-		FinalEquity: finalEquity,
-		MaxDrawdown: maxDD,
+		Trades:           trades,
+		EquityCurve:      equityCurve,
+		FinalEquity:      finalEquity,
+		MaxDrawdown:      maxDD,
+		BuyAndHoldReturn: buyAndHold,
 	}
 }
 
@@ -142,10 +150,9 @@ func computeMaxDrawdown(equityCurve []core.EquityPoint) float64 {
 	return maxDD
 }
 
-
 // openLongFromDecision opens a new long postition based on a buy order
 // - equity is current total equity (cash + any open positions marked to market)
-// - if order size == 0 we do all in sizing  
+// - if order size == 0 we do all in sizing
 func (e *Engine) openLongFromDecision(decision strategy.Decision, c core.Candle, equity float64) *core.Position {
 	if !decision.EnterLong {
 		return nil
@@ -155,7 +162,7 @@ func (e *Engine) openLongFromDecision(decision strategy.Decision, c core.Candle,
 	}
 	price := c.Close
 	if e.cfg.SlippageBps != 0 {
-		price *= (1 + e.cfg.SlippageBps / 10000)
+		price *= (1 + e.cfg.SlippageBps/10000)
 	}
 	if price <= 0 {
 		return nil
@@ -171,19 +178,20 @@ func (e *Engine) openLongFromDecision(decision strategy.Decision, c core.Candle,
 		return nil
 	}
 	return &core.Position{
-		PositionSide: core.PositionSideLong,
-		Quantity: size,
+		PositionSide:  core.PositionSideLong,
+		Quantity:      size,
 		AvgEntryPrice: price,
-		StopLoss: decision.StopLoss,
-		TakeProfit: decision.TakeProfit,
-		EntryTime: c.Timestamp,
-		CostBasis: price * size,
-		CurrentPrice: price,
+		StopLoss:      decision.StopLoss,
+		TakeProfit:    decision.TakeProfit,
+		EntryTime:     c.Timestamp,
+		CostBasis:     price * size,
+		CurrentPrice:  price,
 	}
 }
 
-
-
+func (e *Engine) Config() EngineConfig {
+	return e.cfg
+}
 
 // simple intraday exit check
 func (e *Engine) checkExitOnBar(pos *core.Position, c core.Candle) (bool, core.Trade) {
@@ -205,25 +213,32 @@ func (e *Engine) checkExitOnBar(pos *core.Position, c core.Candle) (bool, core.T
 }
 
 func (e *Engine) exitPosition(
-    pos *core.Position,
-    c core.Candle,
+	pos *core.Position,
+	c core.Candle,
 ) core.Trade {
-    exitPrice := c.Close
-    if e.cfg.SlippageBps != 0 {
-        exitPrice *= 1.0 - e.cfg.SlippageBps/10000.0
-    }
+	exitPrice := c.Close
+	if e.cfg.SlippageBps != 0 {
+		exitPrice *= 1.0 - e.cfg.SlippageBps/10000.0
+	}
 
-    grossPnL := (exitPrice - pos.AvgEntryPrice) * pos.Quantity
-    netPnL := grossPnL - e.cfg.CommissionPerTrade
+	grossPnL := (exitPrice - pos.AvgEntryPrice) * pos.Quantity
+	netPnL := grossPnL - e.cfg.CommissionPerTrade
 
-    trade := core.Trade{
-        PositionSide: pos.PositionSide,
-        EntryTime:  pos.EntryTime,
-        EntryPrice: pos.AvgEntryPrice,
-        ExitTime:   c.Timestamp,
-        ExitPrice:  exitPrice,
-        Size:       pos.Quantity,
-        PnL:        netPnL,
-    }
-    return trade
+	var risk float64
+	if pos.StopLoss != nil {
+		risk = math.Abs(pos.AvgEntryPrice-*pos.StopLoss) * pos.Quantity
+	}
+
+	trade := core.Trade{
+		Symbol:       pos.Symbol,
+		PositionSide: pos.PositionSide,
+		EntryTime:    pos.EntryTime,
+		EntryPrice:   pos.AvgEntryPrice,
+		ExitTime:     c.Timestamp,
+		ExitPrice:    exitPrice,
+		Size:         pos.Quantity,
+		PnL:          netPnL,
+		Risk:         risk,
+	}
+	return trade
 }

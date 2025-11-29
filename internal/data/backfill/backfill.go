@@ -7,20 +7,17 @@ import (
 	"time"
 )
 
-
 type BackfillService struct {
-	Src	source.MarketDataSource
+	Src     source.MarketDataSource
 	Storage storage.BarStore
 }
 
-
 type BackfillRequest struct {
-	Symbol core.Symbol
+	Symbol    core.Symbol
 	Timeframe core.Timeframe
 	StartDate *time.Time
-	EndDate *time.Time
+	EndDate   *time.Time
 }
-
 
 func (b *BackfillService) Backfill(request BackfillRequest) error {
 	from := request.StartDate
