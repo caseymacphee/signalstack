@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package signalstack.v1;
+
+option go_package = "signalstack/gen/proto/signalstack/v1;signalstackv1";
+
+import "google/protobuf/timestamp.proto";
+
+service BacktestService {
+  rpc RunBacktest(RunBacktestRequest) returns (RunBacktestResponse) {}
+}
+
+message RunBacktestRequest {
+  string job_id     = 1;  // correlation id (optional for now)
+  string symbol     = 2;  // e.g. "AAPL"
+  string timeframe  = 3;  // e.g. "1D"
+  google.protobuf.Timestamp start = 4;
+  google.protobuf.Timestamp end   = 5;
+  string strategy_id = 6;         // e.g. "SMA_CROSS"
+  map<string, string> params = 7; // strategy-specific params
+}
+
+message RunBacktestResponse {
+  string job_id     = 1;
+  string symbol     = 2;
+  string strategy_id = 3;
+
+  BacktestMetrics metrics = 4;
+  repeated Trade trades   = 5;
+}
+
+message BacktestMetrics {
+  double cagr          = 1;
+  double max_drawdown  = 2; // fraction (0.2 = 20%)
+  double win_rate      = 3; // fraction
+  double profit_factor = 4;
+  double final_equity  = 5;
+}
+
+message Trade {
+  string side      = 1; // "BUY"/"SELL" (closing order side)
+  string position  = 2; // "LONG"/"SHORT"
+  google.protobuf.Timestamp entry_time = 3;
+  double entry_price = 4;
+  google.protobuf.Timestamp exit_time  = 5;
+  double exit_price  = 6;
+  double size        = 7;
+  double pnl         = 8;
+  double r_multiple  = 9;  // 0 if unset; you can make this optional later if you want
+}
